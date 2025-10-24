@@ -1,0 +1,18 @@
+Block,FLOPs (G),Param Memory (MB),Activation Size (MB),model_name
+0,-0.8707728041538518,0.0364,24.5,resnet50_block_metrics_batch8
+1,-0.7473996225612494,0.2861,24.5,resnet50_block_metrics_batch8
+2,-0.7621393147359785,0.2686,24.5,resnet50_block_metrics_batch8
+3,-0.7621393147359785,0.2686,12.25,resnet50_block_metrics_batch8
+4,-0.5956746464465729,1.4473,12.25,resnet50_block_metrics_batch8
+5,-0.7631183597956834,1.0684,12.25,resnet50_block_metrics_batch8
+6,-0.7631183597956834,1.0684,12.25,resnet50_block_metrics_batch8
+7,-0.7631183597956834,1.0684,6.125,resnet50_block_metrics_batch8
+8,-0.5966199313318052,5.7695,6.125,resnet50_block_metrics_batch8
+9,-0.7636045063080886,4.2617,6.125,resnet50_block_metrics_batch8
+10,-0.7636045063080886,4.2617,6.125,resnet50_block_metrics_batch8
+11,-0.7636045063080886,4.2617,6.125,resnet50_block_metrics_batch8
+12,-0.7636045063080886,4.2617,6.125,resnet50_block_metrics_batch8
+13,-0.7636045063080886,4.2617,3.0625,resnet50_block_metrics_batch8
+14,-0.5970993258093158,23.0391,3.0625,resnet50_block_metrics_batch8
+15,-0.7638475795642912,17.0234,3.0625,resnet50_block_metrics_batch8
+16,-0.7638475795642912,17.0234,0.0,resnet50_block_metrics_batch8

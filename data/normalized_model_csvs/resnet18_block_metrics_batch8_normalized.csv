@@ -1,0 +1,10 @@
+Block,FLOPs (G),Param Memory (MB),Activation Size (MB),model_name
+0,-0.8707728041538518,0.0364,6.125,resnet18_block_metrics_batch8
+1,-0.7495670257623892,0.2822,6.125,resnet18_block_metrics_batch8
+2,-0.7495670257623892,0.2822,3.0625,resnet18_block_metrics_batch8
+3,-0.8052915697468325,0.8779,3.0625,resnet18_block_metrics_batch8
+4,-0.749891123437326,1.127,1.5312,resnet18_block_metrics_batch8
+5,-0.805507634863457,3.5059,1.5312,resnet18_block_metrics_batch8
+6,-0.7500531722747943,4.5039,0.7656,resnet18_block_metrics_batch8
+7,-0.8056156674217693,14.0117,0.7656,resnet18_block_metrics_batch8
+8,-0.7501341966935285,18.0078,0.0,resnet18_block_metrics_batch8

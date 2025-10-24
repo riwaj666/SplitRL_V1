@@ -1,0 +1,20 @@
+Block,FLOPs (G),Param Memory (MB),Activation Size (MB),model_name
+0,-0.9878598412596596,0.0035,12.25,mobilenetv2_block_metrics_batch8
+1,-0.9885080366095332,0.0034,6.125,mobilenetv2_block_metrics_batch8
+2,-0.9667462281445071,0.0196,2.2969,mobilenetv2_block_metrics_batch8
+3,-0.9711350508259426,0.0337,2.2969,mobilenetv2_block_metrics_batch8
+4,-0.9826540223559875,0.0381,0.7656,mobilenetv2_block_metrics_batch8
+5,-0.9877788168409254,0.0566,0.7656,mobilenetv2_block_metrics_batch8
+6,-0.9877788168409254,0.0566,0.7656,mobilenetv2_block_metrics_batch8
+7,-0.9916139726610107,0.0803,0.3828,mobilenetv2_block_metrics_batch8
+8,-0.9886835895167906,0.207,0.3828,mobilenetv2_block_metrics_batch8
+9,-0.9886835895167906,0.207,0.3828,mobilenetv2_block_metrics_batch8
+10,-0.9886835895167906,0.207,0.3828,mobilenetv2_block_metrics_batch8
+11,-0.9860773040475073,0.2542,0.5742,mobilenetv2_block_metrics_batch8
+12,-0.975220031937125,0.4512,0.5742,mobilenetv2_block_metrics_batch8
+13,-0.975220031937125,0.4512,0.5742,mobilenetv2_block_metrics_batch8
+14,-0.9829781200309243,0.5923,0.2393,mobilenetv2_block_metrics_batch8
+15,-0.9831739290428653,1.2207,0.2393,mobilenetv2_block_metrics_batch8
+16,-0.9831739290428653,1.2207,0.2393,mobilenetv2_block_metrics_batch8
+17,-0.9750309749600786,1.8079,0.4785,mobilenetv2_block_metrics_batch8
+18,-0.9782516956047629,1.5723,1.9141,mobilenetv2_block_metrics_batch8

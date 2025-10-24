@@ -1,0 +1,21 @@
+Block,FLOPs (G),Param Memory (MB),Activation Size (MB),model_name
+0,-0.978123406941767,0.0035,21.6807,inceptionv3_block_metrics_batch8
+1,-0.7837323223286419,0.0354,21.1025,inceptionv3_block_metrics_batch8
+2,-0.5674713966921782,0.0708,42.2051,inceptionv3_block_metrics_batch8
+3,-0.9992505241267087,0.0,10.4082,inceptionv3_block_metrics_batch8
+4,-0.969831908091301,0.0201,13.0103,inceptionv3_block_metrics_batch8
+5,-0.2455883892007954,0.5288,29.5371,inceptionv3_block_metrics_batch8
+6,-0.9994800933131223,0.0,7.1777,inceptionv3_block_metrics_batch8
+7,-0.6615137387030017,0.9762,9.5703,inceptionv3_block_metrics_batch8
+8,-0.6329526310991975,1.0585,10.7666,inceptionv3_block_metrics_batch8
+9,-0.6227705624782669,1.0878,10.7666,inceptionv3_block_metrics_batch8
+10,-0.5650406641301522,4.3994,6.7734,inceptionv3_block_metrics_batch8
+11,-0.5950534592362774,4.9492,6.7734,inceptionv3_block_metrics_batch8
+12,-0.47219343229565813,6.4507,6.7734,inceptionv3_block_metrics_batch8
+13,-0.47219343229565813,6.4507,6.7734,inceptionv3_block_metrics_batch8
+14,-0.33143376084967613,8.1709,6.7734,inceptionv3_block_metrics_batch8
+15,-0.6850850925197582,6.4785,2.5,inceptionv3_block_metrics_batch8
+16,-0.6512776538029149,19.2437,4.0,inceptionv3_block_metrics_batch8
+17,-0.5798883888631936,23.1812,4.0,inceptionv3_block_metrics_batch8
+18,-0.9999324796510548,0.0,0.0625,inceptionv3_block_metrics_batch8
+19,-1.0,0.0,0.0625,inceptionv3_block_metrics_batch8

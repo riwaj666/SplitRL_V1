@@ -1,0 +1,14 @@
+Block,FLOPs (G),Param Memory (MB),Activation Size (MB),model_name
+0,-0.9239720870877461,0.0889,5.9082,alexnet_block_metrics_batch8
+1,-0.9998987194765823,0.0,5.9082,alexnet_block_metrics_batch8
+2,-0.9998987194765823,0.0,1.4238,alexnet_block_metrics_batch8
+3,-0.757986813275851,1.1726,4.2715,alexnet_block_metrics_batch8
+4,-0.9999257276161603,0.0,4.2715,alexnet_block_metrics_batch8
+5,-0.9999257276161603,0.0,0.9902,alexnet_block_metrics_batch8
+6,-0.8788144777132209,2.5327,1.9805,alexnet_block_metrics_batch8
+7,-0.9999662398255275,0.0,1.9805,alexnet_block_metrics_batch8
+8,-0.8384440610789077,3.376,1.3203,alexnet_block_metrics_batch8
+9,-0.9999797438953164,0.0,1.3203,alexnet_block_metrics_batch8
+10,-0.8922915393626755,2.251,1.3203,alexnet_block_metrics_batch8
+11,-0.9999797438953164,0.0,1.3203,alexnet_block_metrics_batch8
+12,-0.9999797438953164,0.0,0.2812,alexnet_block_metrics_batch8
