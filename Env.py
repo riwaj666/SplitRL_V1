@@ -48,7 +48,7 @@ class DevicePlacementEnv(gym.Env):
         = 12 total features
         """
 
-        state_dim = (1 + 1 + self.num_devices + self.num_devices + 1 + self.num_devices)
+        state_dim = (1 + 1 + self.num_devices + self.num_devices + 1 +1+ self.num_devices)
         self.observation_space = spaces.Box(low=0, high=np.inf, shape=(state_dim,), dtype=np.float32)
 
         # Action space = pick device
@@ -60,39 +60,53 @@ class DevicePlacementEnv(gym.Env):
         block = self.blocks[self.current_block]
         block_flops = block["flops"]
         activation_size = block["activation_size"]
+
+        # ---- Get network transfer time ----
+        model_name = block["model"]
+        split_point = self.current_block + 1  # assuming split points start from 1
+
+        lookup_table = pi_to_pi_lookup if self.reinforce_env == "1" else pi_to_gpu_lookup
+
+        # Find the nearest available split point in the table
+        available_splits = sorted(lookup_table[model_name].keys())
+        if split_point not in available_splits:
+            split_point = available_splits[-1]  # fallback to last split
+
+        net_transfer_time = lookup_table[model_name][split_point]["Network Transfer"]
+
+        # ---- Build state vector ----
         state = np.concatenate([
             np.array([block_flops], dtype=np.float32),
             np.array([self.num_blocks - self.current_block - 1], dtype=np.float32),
             np.array(self.device_loads, dtype=np.float32),
             np.array(self.device_mem_used, dtype=np.float32),
             np.array([activation_size], dtype=np.float32),
+            np.array([net_transfer_time], dtype=np.float32),  # <- added network transfer
             self.prev_device_onehot.astype(np.float32)
         ])
+
         return state
 
     def step(self, action):
         block = self.blocks[self.current_block]
         model = block["model"]
 
-        # --- Update loads and times ---
         self.device_loads[action] += block["flops"]
         self.device_mem_used[action] += block["mem_req"]
-        # --- Update previous device state ---
+
         self.prev_device = action
         self.prev_device_onehot = np.zeros(self.num_devices)
         self.prev_device_onehot[action] = 1.0
-
-        # Log the chosen action for later analysis
         self.actions_taken.append(action)
 
 
-        # --- Move to next block ---
+
+        # ---- Termination logic ----
         self.current_block += 1
         terminated = (self.current_block == self.num_blocks)
 
-        # --- Compute reward only after final block ---
         if terminated:
-            # Find split point (where device choice changes)
+            # Compute final reward (existing logic)
             split_point = None
             for i in range(1, len(self.actions_taken)):
                 if self.actions_taken[i] != self.actions_taken[i - 1]:
@@ -101,28 +115,17 @@ class DevicePlacementEnv(gym.Env):
             if split_point is None:
                 split_point = len(self.actions_taken)
 
-            #  Get the model and correct lookup table
             model = self.blocks[0]["model"]
-            lookup_table = (
-                pi_to_pi_lookup if self.reinforce_env == "1" else pi_to_gpu_lookup
-            )
-
+            lookup_table = pi_to_pi_lookup if self.reinforce_env == "1" else pi_to_gpu_lookup
             available_splits = sorted(lookup_table[model].keys())
-
-            #  Safely clamp split_point to a valid range
             if split_point not in available_splits:
-                split_point = available_splits[-1]  # Use largest valid split
-
-            # Fetch timing info
+                split_point = available_splits[-1]
             info = lookup_table[model][split_point]
 
-            reward = -max(info["Partition 1 exec"],info["Partition 2 exec"],info["Network Transfer"])
-
-            #  End of episode → zero next state
+            reward = -max(info["Partition 1 exec"], info["Partition 2 exec"], info["Network Transfer"])
             next_state = np.zeros(self.observation_space.shape, dtype=np.float32)
-
         else:
-            reward = 0.0
+            reward=0.0
             next_state = self._get_state()
 
         return next_state, reward, terminated, False, {"valid_actions": self.get_action_mask()}

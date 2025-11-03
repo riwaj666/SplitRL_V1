@@ -1,7 +1,7 @@
 import pandas as pd
 
 pi_to_pi_df = pd.read_csv("data/lookup_table/lookup_table_1_pi_to_pi.csv")
-pi_to_gpu_df = pd.read_csv("data/lookup_table/lookup_table_1_pi_to_GPU.csv")
+pi_to_gpu_df = pd.read_csv("data/lookup_table/normalized_lookup_table_1_pi_to_GPU.csv")
 
 # Convert to nested dictionary: model -> split_point -> info
 def df_to_lookup(df):

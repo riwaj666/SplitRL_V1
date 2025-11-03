@@ -1,13 +1,9 @@
-import os
 import glob
-import pandas as pd
-from sklearn.preprocessing import StandardScaler
-
 import os
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
-def normalize_flop_model(models_dir="data/model_csvs", field="FLOPs (G)", save=False):
+def normalize_model_features(models_dir="data/model_csvs", save=False):
     # Step 1: Collect all CSVs
     csv_files = [f for f in os.listdir(models_dir) if f.endswith(".csv")]
     csv_files.sort()
@@ -17,19 +13,23 @@ def normalize_flop_model(models_dir="data/model_csvs", field="FLOPs (G)", save=F
         model_name = os.path.splitext(file)[0]
         df = pd.read_csv(os.path.join(models_dir, file))
         df["model_name"] = model_name
+
+        # Append to list
         dfs.append(df)
 
-    # Step 2: Combine
+    # Step 2: Combine all models
     combined_df = pd.concat(dfs, ignore_index=True)
 
-    # Step 3: Normalize using MinMaxScaler (-1 to 1) and **replace original column**
-    if field in combined_df.columns:
-        scaler = MinMaxScaler(feature_range=(-1, 1))
-        combined_df[[field]] = scaler.fit_transform(combined_df[[field]])
-    else:
-        print(f"⚠️ Warning: Column '{field}' not found!")
+    # Step 3: Normalize numeric features only
+    numeric_fields = ["FLOPs (G)", "Param Memory (MB)", "Activation Size (MB)"]
+    for field in numeric_fields:
+        if field in combined_df.columns:
+            scaler = MinMaxScaler(feature_range=(-1, 1))
+            combined_df[[field]] = scaler.fit_transform(combined_df[[field]])
+        else:
+            print(f"⚠️ Warning: Column '{field}' not found!")
 
-    # Step 4: Optionally save combined CSV
+    # Step 4: Optionally save
     if save:
         out_path = os.path.join(models_dir, "combined_normalized.csv")
         combined_df.to_csv(out_path, index=False)
@@ -53,8 +53,6 @@ def split_by_model(combined_df, save_dir="data/normalized_model_csvs"):
         print(f"✅ Saved {model_name} to {path}")
 
     return model_dfs
-
-
 
 
 def load_models(models_dir="data/normalized_model_csvs"):
@@ -96,9 +94,8 @@ def load_models(models_dir="data/normalized_model_csvs"):
 
 # Example usage
 if __name__ == "__main__":
-    # normalize_flop_model()
-    # combined_df = normalize_flop_model()
-    # model_dfs = split_by_model(combined_df, save_dir="data/normalized_model_csvs")
+    combined_df = normalize_model_features()
+    model_dfs = split_by_model(combined_df, save_dir="data/normalized_model_csvs")
 
     models = load_models()
     print(f"Found {len(models)} models:")
