@@ -9,11 +9,11 @@ import numpy as np
 import os
 
 # --------- HYPERPARAMETERS ----------
-num_episodes = 1500
+num_episodes = 15000
 lr = 1e-3
 gamma = 0.9
 batch_size = 5
-entropy_coeff = 0.5
+entropy_coeff = 0.8
 
 
 
@@ -62,7 +62,7 @@ with open(split_log_path, "w") as f:
     f.write("=== Split Points Log ===\n\n")
 
 for episode in range(num_episodes):
-    model_name = "MobileNetV2"
+    model_name = random.choice(model_names)
     blocks = models[model_name]
     env = DevicePlacementEnv(blocks, device_list, reinforce_env, model_name)
     state, _ = env.reset()
@@ -119,34 +119,60 @@ for episode in range(num_episodes):
 
     # --- Store episode data for batch update ---
     batch_memory.append({
+        "model_name": model_name,
         "log_probs": torch.stack(log_probs),
         "entropies": torch.stack(entropies),
         "reward": final_reward
     })
 
-    # --- Policy update after each episode ---
-    rewards_tensor = torch.tensor([final_reward], dtype=torch.float32)
-    mean_r = final_reward
-    std_r = 1.0  # avoid std warning when single reward
 
-    normalized_r = (final_reward - mean_r) / std_r
+    # --- Perform policy update every `batch_size` episodes ---
+    if (episode + 1) % batch_size == 0:
 
-    baseline = 0.9 * baseline + 0.1 * final_reward
-    advantage = final_reward - baseline
+        # Initialize per-model baselines & buffers if not exist
+        if 'baselines' not in globals():
+            baselines = {}
+        if 'reward_buffers' not in globals():
+            reward_buffers = {}
 
-    loss = -torch.stack(log_probs).sum() * advantage - entropy_coeff * torch.stack(entropies).sum()
+        batch_loss = 0.0
 
-    optimizer.zero_grad()
-    loss.backward()
-    torch.nn.utils.clip_grad_norm_(policy.parameters(), max_norm=1.0)
-    optimizer.step()
+        # Update per-model rolling rewards and baselines
+        for ep_data in batch_memory:
+            mname = ep_data.get("model_name", model_name)
+            rew = ep_data["reward"]
 
+            if mname not in baselines:
+                baselines[mname] = 0.0
+            if mname not in reward_buffers:
+                reward_buffers[mname] = []
 
-    # and slowly decay entropy:
-    entropy_coeff = max(0.05, entropy_coeff * 0.995)
+            reward_buffers[mname].append(rew)
+            if len(reward_buffers[mname]) > 50:
+                reward_buffers[mname].pop(0)
 
+            mean_r = np.mean(reward_buffers[mname])
+            std_r = np.std(reward_buffers[mname]) + 1e-8
 
+            baselines[mname] = 0.9 * baselines[mname] + 0.1 * rew
+            advantage = (rew - mean_r) / std_r
+            advantage_baselined = advantage - baselines[mname]
 
+            ep_loss = -ep_data["log_probs"].sum() * advantage_baselined \
+                      - entropy_coeff * ep_data["entropies"].sum()
+
+            batch_loss += ep_loss
+
+        batch_loss /= batch_size
+
+        optimizer.zero_grad()
+        batch_loss.backward()
+        torch.nn.utils.clip_grad_norm_(policy.parameters(), max_norm=1.0)
+        optimizer.step()
+
+        # Slowly decay entropy coefficient
+        entropy_coeff = max(0.05, entropy_coeff * 0.999)
+        batch_memory = []
 
 
     # --- Progress log ---
@@ -172,9 +198,7 @@ plt.plot(moving_avg, label=f"Moving Avg (window={window})", color='red')
 
 plt.xlabel('Episode')
 plt.ylabel('Reward (negative inference time)')
-plt.title('Reward vs Episode('+model_name+')')
+plt.title('Reward vs Episode(pi to pi)')
 plt.grid(True)
 plt.legend()
 plt.show()
-
-

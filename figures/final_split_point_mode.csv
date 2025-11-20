@@ -1,0 +1,7 @@
+model,split_point
+AlexNet,7
+InceptionV3,5
+MobileNetV2,4
+ResNet18,5
+VGG16,9
+resnet50,7

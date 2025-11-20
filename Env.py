@@ -3,6 +3,9 @@ from gymnasium import spaces
 import numpy as np
 from lookUpTable import pi_to_pi_lookup,pi_to_gpu_lookup
 
+MODEL_LIST = ['AlexNet', 'InceptionV3', 'MobileNetV2', 'ResNet18', 'resnet50', 'VGG16']
+
+MODEL_TO_IDX = {m: i for i, m in enumerate(MODEL_LIST)}
 
 class DevicePlacementEnv(gym.Env):
     """
@@ -45,10 +48,10 @@ class DevicePlacementEnv(gym.Env):
         + 3(device_mem_used)
         + 1(activation_size)
         + 3(prev_device_onehot)
-        = 12 total features
+        = 12 total featuress
         """
 
-        state_dim = (1 + 1 + self.num_devices + self.num_devices + 1 +1+ self.num_devices)
+        state_dim = (6+1 + 1 + self.num_devices + self.num_devices + 1 +1+ self.num_devices)
         self.observation_space = spaces.Box(low=0, high=np.inf, shape=(state_dim,), dtype=np.float32)
 
         # Action space = pick device
@@ -74,8 +77,15 @@ class DevicePlacementEnv(gym.Env):
 
         net_transfer_time = lookup_table[model_name][split_point]["Network Transfer"]
 
+        # --- One-hot encode model name ---
+        model_one_hot = np.zeros(len(MODEL_LIST), dtype=np.float32)
+
+        if model_name in MODEL_TO_IDX:
+            model_one_hot[MODEL_TO_IDX[model_name]] = 1.0
+
         # ---- Build state vector ----
         state = np.concatenate([
+            model_one_hot,
             np.array([block_flops], dtype=np.float32),
             np.array([self.num_blocks - self.current_block - 1], dtype=np.float32),
             np.array(self.device_loads, dtype=np.float32),

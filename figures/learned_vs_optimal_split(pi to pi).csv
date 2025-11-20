@@ -1,0 +1,7 @@
+Model name,optimal_split,learned_split
+AlexNet,7,7
+InceptionV3,10,8
+MobileNetV2,5,5
+ResNet18,6,5
+VGG16,14,13
+resnet50,7,7
