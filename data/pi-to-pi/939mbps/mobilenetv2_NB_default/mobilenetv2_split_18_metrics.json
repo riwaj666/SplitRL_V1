@@ -1,0 +1,18 @@
+{
+    "model_name": "mobilenetv2",
+    "split_index": 18,
+    "static_network_delay_ms": 0,
+    "system_inference_throughput_imgs_per_s": 4.462519681368213,
+    "average_metrics_per_batch": {
+        "part1_inference_time_s": 1.7499593794345856,
+        "part2_inference_time_s": 0.025320857763290405,
+        "network_time_s": 0.005262106657028198,
+        "end_to_end_latency_s": 1.7985854744911194,
+        "intermediate_data_size_bytes": 502311.0,
+        "network_throughput_mbps": 91.2483682282517,
+        "device1_cpu_percent": 84.1375,
+        "device1_gpu_util_percent": null,
+        "device2_cpu_percent": 2.3625000000000003,
+        "device2_gpu_util_percent": null
+    }
+}

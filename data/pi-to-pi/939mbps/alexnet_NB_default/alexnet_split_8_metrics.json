@@ -1,0 +1,18 @@
+{
+    "model_name": "alexnet",
+    "split_index": 8,
+    "static_network_delay_ms": 0,
+    "system_inference_throughput_imgs_per_s": 14.24455023095441,
+    "average_metrics_per_batch": {
+        "part1_inference_time_s": 0.2680457532405853,
+        "part2_inference_time_s": 0.5497943758964539,
+        "network_time_s": 0.0070002079010009766,
+        "end_to_end_latency_s": 1.5299526154994965,
+        "intermediate_data_size_bytes": 2077223.0,
+        "network_throughput_mbps": 422.2168726839858,
+        "device1_cpu_percent": 74.3,
+        "device1_gpu_util_percent": null,
+        "device2_cpu_percent": 81.11250000000001,
+        "device2_gpu_util_percent": null
+    }
+}

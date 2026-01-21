@@ -1,0 +1,7 @@
+model,bandwidth_mbps,avg_reward,std_reward,most_common_split
+AlexNet,939,0.293,0.0,4
+InceptionV3,939,0.653,0.0,8
+MobileNetV2,939,0.469,0.0,7
+ResNet18,939,1.0,0.0,2
+VGG16,939,1.0,0.0,13
+resnet50,939,1.0,0.0,6
