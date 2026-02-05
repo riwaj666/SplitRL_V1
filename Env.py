@@ -29,6 +29,14 @@ class DevicePlacementEnv(gym.Env):
         self.current_block = 0
         self.model_name = model_name.strip().lower()
         self.reinforce_env=reinforce_env
+        # --- Total execution time (used for fraction_left) ---
+        if self.reinforce_env == "1":  # Pi → Pi
+            self.total_exec_time = sum(b["cpu_time"] for b in self.blocks)
+        else:  # Pi → GPU
+            self.total_exec_time = sum(b["gpu_time"] for b in self.blocks)
+
+        self.remaining_exec_time = self.total_exec_time
+
         self.actions_taken = []
         self.bandwidth_mbps = 939
 
@@ -56,7 +64,22 @@ class DevicePlacementEnv(gym.Env):
         # = 13
         # features
 
-        state_dim = (1 + 1 + self.num_devices + self.num_devices + 1 +1+ self.num_devices)
+        if self.reinforce_env == "1":  # Pi → Pi
+            exec_feat_dim = 1
+        else:  # Pi → GPU
+            exec_feat_dim = 2
+
+        state_dim = (
+                exec_feat_dim
+                + 1  # remaining blocks
+                +1 #fraction_left   ← ADD THIS
+                + self.num_devices  # device loads
+                + self.num_devices  # device memory
+                + 1  # activation size
+                + 1  # network transfer time
+                + self.num_devices  # prev device one-hot
+        )
+
         self.observation_space = spaces.Box(low=0, high=np.inf, shape=(state_dim,), dtype=np.float32)
 
         # Action space = pick device
@@ -64,30 +87,45 @@ class DevicePlacementEnv(gym.Env):
 
         self.reset()
 
-
-
     def _get_state(self):
         block = self.blocks[self.current_block]
-        block_flops = block["flops"]
+
+        cpu_time = block["cpu_time"]
+        gpu_time = block["gpu_time"]
         activation_size = block["activation_size"]
+
+        fraction_left = (
+            self.remaining_exec_time / self.total_exec_time
+            if self.total_exec_time > 0 else 0.0
+        )
 
         if self.current_block == 0 or self.prev_device is None:
             net_transfer_time = 0.0
         else:
             lookup_table = pi_to_pi_lookup if self.reinforce_env == "1" else pi_to_gpu_lookup
             bw = self.bandwidth_mbps
-            split_point = self.current_block  # split happens BEFORE this block
+            split_point = self.current_block
+
             available_splits = sorted(lookup_table[self.model_name][bw].keys())
             if split_point not in available_splits:
                 split_point = available_splits[-1]
 
             net_transfer_time = lookup_table[self.model_name][bw][split_point]["Network Transfer"]
 
+        # Pi→Pi: only CPU time
+        if self.reinforce_env == "1":
+            exec_features = np.array([cpu_time], dtype=np.float32)
+        else:
+            exec_features = np.array([cpu_time, gpu_time], dtype=np.float32)
+
+
+
         state = np.concatenate([
-            np.array([block_flops], dtype=np.float32),
+            exec_features,
             np.array([self.num_blocks - self.current_block - 1], dtype=np.float32),
-            np.array(self.device_loads, dtype=np.float32),
-            np.array(self.device_mem_used, dtype=np.float32),
+            np.array([fraction_left], dtype=np.float32),
+            self.device_loads.astype(np.float32),
+            self.device_mem_used.astype(np.float32),
             np.array([activation_size], dtype=np.float32),
             np.array([net_transfer_time], dtype=np.float32),
             self.prev_device_onehot.astype(np.float32)
@@ -99,7 +137,18 @@ class DevicePlacementEnv(gym.Env):
         block = self.blocks[self.current_block]
         model = block["model"]
 
-        self.device_loads[action] += block["flops"]
+        # inside step()
+        if self.reinforce_env == "1":  # Pi → Pi
+            exec_time = block["cpu_time"]
+        else:  # Pi → GPU
+            if action == 0:  # Pi device
+                exec_time = block["cpu_time"]
+            else:  # GPU device
+                exec_time = block["gpu_time"]
+
+        self.remaining_exec_time -= exec_time
+
+        self.device_loads[action] += exec_time
         self.device_mem_used[action] += block["mem_req"]
 
         self.prev_device = action
@@ -148,6 +197,7 @@ class DevicePlacementEnv(gym.Env):
         self.device_loads = np.zeros(self.num_devices, dtype=np.float32)
         self.device_mem_used = np.zeros(self.num_devices, dtype=np.float32)
         self.prev_device = None
+        self.remaining_exec_time = self.total_exec_time
         self.prev_device_onehot = np.zeros(self.num_devices, dtype=np.float32)
         self.placement_log = []
         self.bandwidth_mbps = 939
@@ -180,4 +230,3 @@ class DevicePlacementEnv(gym.Env):
 
     def render(self):
         print(f"Block {self.current_block}, Loads: {self.device_loads}, Mem: {self.device_mem_used}")
-
