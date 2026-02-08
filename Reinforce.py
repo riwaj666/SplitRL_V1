@@ -9,7 +9,7 @@ import numpy as np
 import os
 
 # --------- HYPERPARAMETERS ----------
-num_episodes = 14000
+num_episodes = 18000
 lr = 1e-3
 gamma = 0.9
 batch_size = 5

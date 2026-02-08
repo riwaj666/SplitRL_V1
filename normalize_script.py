@@ -1,63 +1,93 @@
-import pandas as pd
 import os
+import json
+import pandas as pd
 
-# -----------------------------
-# Configuration
-# -----------------------------
-LOOKUP_FILE = "data/lookup_table/normalized_lookup_table_1_pi_to_GPU.csv"
-BLOCKS_DIR = "data/normalized_model_csvs"
-OUTPUT_DIR = "data/normalized_model_csvs_pi_to_GPU"
+# -----------------------------------
+# CONFIGURATION
+# -----------------------------------
+INPUT_DIR = "data/model_csvs"
+OUTPUT_DIR = "data/normalized_model_csvs"
+STATS_FILE = "data/normalized_model_csvs/normalization_stats.json"
 
-BLOCK_SUFFIX = "_block_metrics_batch8_normalized.csv"
+FEATURE_COLUMNS = [
+    "FLOPs (G)",
+    "Param Memory (MB)",
+    "Activation Size (MB)",
+    "pi_execution_time",
+    "gpu_execution_time"
+]
 
-# -----------------------------
-# Create output directory
-# -----------------------------
+EPS = 1e-8
+# -----------------------------------
+
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# -----------------------------
-# Load lookup table
-# -----------------------------
-lookup = pd.read_csv(LOOKUP_FILE)
-lookup["Model name"] = lookup["Model name"].str.lower()
+# -----------------------------------
+# 1. Load all model CSVs
+# -----------------------------------
+dfs = []
+file_names = []
 
-# -----------------------------
-# Process per model (NOT per split)
-# -----------------------------
-for model in lookup["Model name"].unique():
+for file in os.listdir(INPUT_DIR):
+    if file.endswith(".csv"):
+        path = os.path.join(INPUT_DIR, file)
+        df = pd.read_csv(path)
 
-    block_file = os.path.join(
-        BLOCKS_DIR,
-        f"{model}{BLOCK_SUFFIX}"
-    )
+        # Sanity check: required columns exist
+        missing = [c for c in FEATURE_COLUMNS if c not in df.columns]
+        if missing:
+            raise ValueError(f"{file} missing columns: {missing}")
 
-    if not os.path.exists(block_file):
-        print(f"[SKIP] Missing block file: {block_file}")
-        continue
+        dfs.append(df)
+        file_names.append(file)
 
-    # Load model block CSV
-    df = pd.read_csv(block_file)
+assert len(dfs) > 0, "❌ No CSV files found in data/model_csvs"
 
-    # Initialize network transfer column
-    df["Network Transfer Time (s)"] = 0.0
+print(f"✔ Loaded {len(dfs)} model CSV files")
 
-    # Get lookup rows for this model
-    model_lookup = lookup[lookup["Model name"] == model]
+# -----------------------------------
+# 2. Compute GLOBAL min / max
+# -----------------------------------
+concat_df = pd.concat(dfs, ignore_index=True)
 
-    # Assign network transfer time at split blocks
-    for _, row in model_lookup.iterrows():
-        split_point = int(row["Split point"])
-        net_time = float(row["Network Transfer Time (s)"])
+global_min = {}
+global_max = {}
 
-        df.loc[df["Block"] == split_point, "Network Transfer Time (s)"] = net_time
+for col in FEATURE_COLUMNS:
+    global_min[col] = concat_df[col].min()
+    global_max[col] = concat_df[col].max()
 
-    # Save ONE file per model
-    output_file = os.path.join(
-        OUTPUT_DIR,
-        f"{model}_block_metrics_with_network.csv"
-    )
+# -----------------------------------
+# 3. Save normalization statistics
+# -----------------------------------
+stats = {
+    col: {
+        "min": float(global_min[col]),
+        "max": float(global_max[col])
+    }
+    for col in FEATURE_COLUMNS
+}
 
-    df.to_csv(output_file, index=False)
-    print(f"[OK] Saved: {output_file}")
+with open(STATS_FILE, "w") as f:
+    json.dump(stats, f, indent=4)
 
-print("\nAll models processed successfully.")
+print(f"✔ Saved normalization stats → {STATS_FILE}")
+
+# -----------------------------------
+# 4. Normalize each CSV and save
+# -----------------------------------
+for df, fname in zip(dfs, file_names):
+    norm_df = df.copy()
+
+    for col in FEATURE_COLUMNS:
+        norm_df[col] = (
+            (df[col] - global_min[col]) /
+            (global_max[col] - global_min[col] + EPS)
+        )
+
+    out_path = os.path.join(OUTPUT_DIR, fname)
+    norm_df.to_csv(out_path, index=False)
+
+    print(f"✔ Saved normalized file → {out_path}")
+
+print("\n✅ All model CSVs normalized successfully.")

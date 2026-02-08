@@ -19,7 +19,8 @@ def normalize_model_features(models_dir="data/model_csvs", save=False):
         "FLOPs (G)",
         "Param Memory (MB)",
         "Activation Size (MB)",
-        "pi_execution_time"
+        "pi_execution_time",
+        "gpu_execution_time"
     ]
 
     scaler = MinMaxScaler(feature_range=(-1, 1))
