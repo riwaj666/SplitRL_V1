@@ -1,0 +1,7 @@
+[
+  "AlexNet",
+  "InceptionV3",
+  "MobileNetV2",
+  "VGG16",
+  "resnet50"
+]

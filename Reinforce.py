@@ -1,212 +1,181 @@
 import random
-import torch.optim as optim
 import torch
+import torch.optim as optim
+import numpy as np
+import os
+import matplotlib.pyplot as plt
+
 from Env import DevicePlacementEnv
 from Model import PolicyNet
 from main import load_models
-import matplotlib.pyplot as plt
-import numpy as np
-import os
-
-# --------- HYPERPARAMETERS ----------
-num_episodes = 18000
-lr = 1e-3
-gamma = 0.9
-batch_size = 5
-entropy_coeff = 0.2
 
 
+# ---------------------------------------------------
+# 📈 Plot utility
+# ---------------------------------------------------
+def save_reward_plot(rewards, fold_id, save_dir="results"):
+    os.makedirs(save_dir, exist_ok=True)
 
-#choose between pi_to_pt and pi_to_gpu env
+    if len(rewards) == 0:
+        print("⚠️ No rewards to plot")
+        return
 
-reinforce_env=input("Enter which table to look:")
-if reinforce_env=="1":
-    device_list = [
-        {"name": "RaspberryPi",  "mem_capacity": 4096},  # example values
-        {"name": "RaspberryPi",  "mem_capacity": 4096}
-    ]
-else:
-    device_list = [
-        {"name": "RaspberryPi",  "mem_capacity": 4096},  # example values
-        {"name": "GPU",  "mem_capacity": 8192}
-    ]
-# --------- LOAD MODELS ----------
-model_dir = "data/normalized_model_csvs"
-models = load_models(model_dir)
-model_names = list(models.keys())
+    plt.figure(figsize=(10, 5))
+    plt.plot(rewards, alpha=0.4, label="Episode Reward")
 
-# --------- SHARED POLICY ----------
-# Use one policy for all models
-# We'll initialize env with first model just to get state_dim / num_devices
-sample_blocks = models[model_names[0]]
-env = DevicePlacementEnv(sample_blocks, device_list,reinforce_env,model_names[0])
-policy = PolicyNet(state_dim=env.observation_space.shape[0],
-                   num_devices=env.num_devices)
-optimizer = optim.Adam(policy.parameters(), lr=lr)
-lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.995)
+    window = 100
+    if len(rewards) >= window:
+        smoothed = np.convolve(rewards, np.ones(window) / window, mode="valid")
+        plt.plot(
+            range(window - 1, window - 1 + len(smoothed)),
+            smoothed,
+            linewidth=2,
+            label="Moving Avg (100)"
+        )
 
-baseline = 0.0
+    plt.xlabel("Episode")
+    plt.ylabel("Final Reward")
+    plt.title(f"Reward vs Episode (Fold {fold_id})")
+    plt.legend()
+    plt.grid(True)
 
-reward_history=[]
-batch_memory = []
+    path = os.path.join(save_dir, f"reward_vs_episode_fold_{fold_id}.png")
+    plt.savefig(path, dpi=300, bbox_inches="tight")
+    plt.close()
 
-
-
-split_log_path = "data/training_log/split_points_log.txt"
-
-# --- Create directory if missing ---
-os.makedirs(os.path.dirname(split_log_path), exist_ok=True)
-
-# --- Initialize split points log file ---
-with open(split_log_path, "w") as f:
-    f.write("=== Split Points Log ===\n\n")
-
-for episode in range(num_episodes):
-    model_name = random.choice(model_names)
-    blocks = models[model_name]
-    env = DevicePlacementEnv(blocks, device_list, reinforce_env, model_name)
-    state, _ = env.reset()
-    episode_bandwidth = env.bandwidth_mbps
-    done = False
-    log_probs = []
-    entropies = []
-    rewards = []
-
-    print(f"\n=== EPISODE {episode + 1} | Model: {model_name} ===")
-
-    while not done:
-        state_tensor = torch.tensor(state, dtype=torch.float32)
-        mask_tensor = torch.tensor(env.get_action_mask(), dtype=torch.float32)
-
-        probs, _ = policy(state_tensor, mask_tensor)
-        dist = torch.distributions.Categorical(probs)
-
-        if env.current_block == 0:
-            action = torch.tensor(0)
-        else:
-            action = dist.sample()
-            log_probs.append(dist.log_prob(action))
-            entropies.append(dist.entropy())
-
-        state, reward, terminated, truncated, _ = env.step(action.item())
-        rewards.append(reward)
-        done = terminated or truncated
+    print(f"📈 Saved reward plot → {path}")
 
 
-    final_reward = rewards[-1]
-    reward_history.append(final_reward)
+# ---------------------------------------------------
+# 🚀 Train policy
+# ---------------------------------------------------
+def train_policy(
+    train_models,
+    reinforce_env,
+    fold_id,
+    num_episodes=8000,
+    lr=1e-3,
+    batch_size=5,
+    entropy_coeff_init=0.05
+):
+    # -------- DEVICES --------
+    if reinforce_env == "1":
+        device_list = [
+            {"name": "RaspberryPi", "mem_capacity": 4096},
+            {"name": "RaspberryPi", "mem_capacity": 4096},
+        ]
+    else:
+        device_list = [
+            {"name": "RaspberryPi", "mem_capacity": 4096},
+            {"name": "GPU", "mem_capacity": 8192},
+        ]
 
-    # --- Determine final split point ---
-    split_point = None
-    for i in range(1, len(env.actions_taken)):
-        if env.actions_taken[i] != env.actions_taken[i - 1]:
-            split_point = i
-            break
-    if split_point is None:
-        split_point = len(env.actions_taken)
+    # -------- LOAD MODELS --------
+    model_dir = "data/normalized_model_csvs"
+    models = load_models(model_dir)
 
-    # --- Log to file: detailed info ---
-    with open(split_log_path, "a") as f:
-        f.write(f"\n=== Episode {episode + 1} | Model: {model_name} ===\n")
-        f.write(f"Bandwidth (Mbps): {episode_bandwidth}\n")
-        f.write(f"Split point: {split_point}\n")
-        f.write(f"Final reward: {final_reward:.6f}\n")
-        f.write("Block → Device mapping:\n")
-        for i, d in enumerate(env.actions_taken):
-            f.write(f"Block {i} → Device {d}\n")
-        f.write("\n")
+    # 🔒 SAFETY (critical)
+    train_models = [m for m in train_models if m in models]
+    if len(train_models) == 0:
+        raise ValueError("❌ No valid train models after filtering")
 
-    # --- Print to terminal: minimal info ---
-    print(f"Episode {episode + 1} | Split point: {split_point}")
+    # -------- INIT POLICY --------
+    sample_blocks = models[train_models[0]]
+    env = DevicePlacementEnv(sample_blocks, device_list, reinforce_env, train_models[0])
 
-    # --- Store episode data for batch update ---
-    batch_memory.append({
-        "model_name": model_name,
-        "log_probs": torch.stack(log_probs),
-        "entropies": torch.stack(entropies),
-        "reward": final_reward
-    })
+    policy = PolicyNet(
+        state_dim=env.observation_space.shape[0],
+        num_devices=env.num_devices
+    )
 
+    optimizer = optim.Adam(policy.parameters(), lr=lr)
+    entropy_coeff = entropy_coeff_init
 
-    # --- Perform policy update every `batch_size` episodes ---
-    if (episode + 1) % batch_size == 0:
+    global_baseline = 0.0
+    reward_buffer = []
+    batch_memory = []
+    episode_rewards = []
 
-        # Initialize per-model baselines & buffers if not exist
-        if 'baselines' not in globals():
-            baselines = {}
-        if 'reward_buffers' not in globals():
-            reward_buffers = {}
+    # -------- TRAIN LOOP --------
+    for episode in range(num_episodes):
+        model_name = random.choice(train_models)
+        env = DevicePlacementEnv(models[model_name], device_list, reinforce_env, model_name)
+        state, _ = env.reset()
 
-        batch_loss = 0.0
+        done = False
+        log_probs, entropies, rewards = [], [], []
 
-        for ep_data in batch_memory:
-            mname = ep_data.get("model_name", model_name)
-            rew = ep_data["reward"]
+        while not done:
+            state_t = torch.tensor(state, dtype=torch.float32)
+            mask_t = torch.tensor(env.get_action_mask(), dtype=torch.float32)
 
-            if mname not in baselines:
-                baselines[mname] = 0.0
-            if mname not in reward_buffers:
-                reward_buffers[mname] = []
+            probs, _ = policy(state_t, mask_t)
+            probs = torch.clamp(probs, 1e-6, 1.0)
+            probs = probs / probs.sum()
+            dist = torch.distributions.Categorical(probs)
 
-            reward_buffers[mname].append(rew)
-            if len(reward_buffers[mname]) > 50:
-                reward_buffers[mname].pop(0)
+            if env.current_block == 0:
+                action = torch.tensor(0)
+            else:
+                action = dist.sample()
+                log_probs.append(dist.log_prob(action))
+                entropies.append(dist.entropy())
 
-            mean_r = np.mean(reward_buffers[mname])
-            std_r = np.std(reward_buffers[mname]) + 1e-8
+            state, reward, terminated, truncated, _ = env.step(action.item())
+            rewards.append(reward)
+            done = terminated or truncated
 
-            baselines[mname] = 0.9 * baselines[mname] + 0.1 * rew
-            advantage = (rew - baselines[mname]) / (std_r + 1e-8)
+        final_reward = rewards[-1]
+        # --- after final_reward ---
+        num_blocks = len(models[model_name])
+        split_ratio = env.current_block / max(1, num_blocks - 1)
+        final_reward *= (0.5 + 0.5 * split_ratio)
+        final_reward = float(np.clip(final_reward, 1e-6, 1.0))
 
-            ep_len = ep_data["log_probs"].shape[0]
+        episode_rewards.append(final_reward)
 
-            ep_loss = -(ep_data["log_probs"].sum() / ep_len) * advantage \
-                      - entropy_coeff * (ep_data["entropies"].sum() / ep_len)
+        if len(log_probs) > 0:
+            batch_memory.append({
+                "model": model_name,
+                "log_probs": torch.stack(log_probs),
+                "entropies": torch.stack(entropies),
+                "reward": final_reward
+            })
 
-            batch_loss += ep_loss
+        # -------- UPDATE --------
+        if (episode + 1) % batch_size == 0 and batch_memory:
+            loss = 0.0
 
-        optimizer.zero_grad()
-        batch_loss.backward()
-        torch.nn.utils.clip_grad_norm_(policy.parameters(), max_norm=1.0)
-        optimizer.step()
+            for ep in batch_memory:
+                m = ep["model"]
+                r = ep["reward"]
 
-        # Slowly decay entropy coefficient
-        entropy_coeff = max(0.02, entropy_coeff * 0.999)
-        batch_memory = []
+                reward_buffer.append(r)
+                reward_buffer = reward_buffer[-100:]
 
+                global_baseline = 0.95 * global_baseline + 0.05 * r
+                adv = r - global_baseline
+                adv = np.clip(adv, -2.0, 2.0)
 
-    # --- Progress log ---
-    if (episode + 1) % 5 == 0:
-        avg_reward = sum(reward_history[-5:]) / min(5, len(reward_history))
-        print(f"\n[Episode {episode + 1}] Avg Reward (last 5): {avg_reward:.4f}")
+                ep_len = ep["log_probs"].shape[0]
+                loss += -(ep["log_probs"].sum() / ep_len) * adv \
+                        - entropy_coeff * (ep["entropies"].sum() / ep_len)
 
-# --- After training ---
-print("\n=== Simulation Complete ===")
+            optimizer.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(policy.parameters(), 1.0)
+            optimizer.step()
 
-# ---- SAVE TRAINED POLICY ----
-save_dir = "checkpoints"
-os.makedirs(save_dir, exist_ok=True)
+            entropy_coeff = max(0.005, entropy_coeff * 0.999)
+            batch_memory.clear()
 
-save_path = os.path.join(save_dir, "policy_net.pth")
+        if (episode + 1) % 500 == 0:
+            print(f"[Fold {fold_id}] Ep {episode+1} Reward {final_reward:.4f}")
 
-torch.save(policy.state_dict(), save_path)
+    # -------- SAVE --------
+    os.makedirs("checkpoints", exist_ok=True)
+    path = f"checkpoints/policy_net_fold_{fold_id}.pth"
+    torch.save(policy.state_dict(), path)
 
-print(f"Policy model saved to {save_path}")
-
-# --- Plot Reward Trend ---
-plt.figure(figsize=(12, 5))
-
-# Raw rewards
-plt.plot(reward_history, label="Reward per Episode", alpha=0.4)
-
-# Moving average
-window = 50
-moving_avg = [np.mean(reward_history[max(0,i-window):i+1]) for i in range(len(reward_history))]
-plt.plot(moving_avg, label=f"Moving Avg (window={window})", color='red')
-
-plt.xlabel('Episode')
-plt.ylabel('Reward (negative inference time)')
-plt.title('Reward vs Episode(pi to pi)')
-plt.grid(True)
-plt.legend()
-plt.show()
+    save_reward_plot(episode_rewards, fold_id)
+    print(f"✅ Saved policy → {path}")

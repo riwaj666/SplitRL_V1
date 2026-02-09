@@ -1,0 +1,2 @@
+fold,model,avg_reward,std_reward,avg_split
+2,resnet50,0.0004879656811657,0.0,15.0

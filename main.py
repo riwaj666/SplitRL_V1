@@ -1,7 +1,7 @@
 import glob
 import os
 import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler,StandardScaler
 
 def normalize_model_features(models_dir="data/model_csvs", save=False):
     csv_files = sorted([f for f in os.listdir(models_dir) if f.endswith(".csv")])
@@ -23,15 +23,18 @@ def normalize_model_features(models_dir="data/model_csvs", save=False):
         "gpu_execution_time"
     ]
 
-    scaler = MinMaxScaler(feature_range=(-1, 1))
+    scaler = StandardScaler()
     combined_df[numeric_fields] = scaler.fit_transform(combined_df[numeric_fields])
 
     if save:
-        combined_df.to_csv(os.path.join(models_dir, "combined_normalized.csv"), index=False)
+        combined_df.to_csv(
+            os.path.join(models_dir, "combined_standardized.csv"),
+            index=False
+        )
 
         import joblib
         joblib.dump(scaler, os.path.join(models_dir, "system_feature_scaler.pkl"))
-        print("✅ Saved scaler for future inference")
+        print("✅ Saved StandardScaler for future inference")
 
     return combined_df
 

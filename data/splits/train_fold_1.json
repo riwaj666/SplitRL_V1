@@ -1,0 +1,6 @@
+[
+  "MobileNetV2",
+  "ResNet18",
+  "VGG16",
+  "resnet50"
+]

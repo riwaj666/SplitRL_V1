@@ -1,90 +1,88 @@
 import torch
-import os
+import numpy as np
 import pandas as pd
+import os
+
 from Env import DevicePlacementEnv
 from Model import PolicyNet
-from main import load_models
+from main import load_models   # ✅ THIS WAS MISSING
 
-# ---------------- CONFIG ----------------
-CHECKPOINT_PATH = "checkpoints/policy_net.pth"
-MODEL_DIR = "data/normalized_model_csvs"
-REINFORCE_ENV = input("Enter which table to look: ")
-# --------------------------------------
 
-# ----- Device list (same as training) -----
-if REINFORCE_ENV == "1":
-    device_list = [
-        {"name": "RaspberryPi", "mem_capacity": 4096},
-        {"name": "RaspberryPi", "mem_capacity": 4096},
-    ]
-else:
-    device_list = [
-        {"name": "RaspberryPi", "mem_capacity": 4096},
-        {"name": "GPU", "mem_capacity": 8192},
-    ]
 
-# -------- LOAD MODELS ----------
-models = load_models(MODEL_DIR)
-model_names = list(models.keys())
+def evaluate_policy(test_models, reinforce_env, fold_id, n_rollouts=5):
+    # -------- DEVICE LIST --------
+    if reinforce_env == "1":
+        device_list = [
+            {"name": "RaspberryPi", "mem_capacity": 4096},
+            {"name": "RaspberryPi", "mem_capacity": 4096},
+        ]
+    else:
+        device_list = [
+            {"name": "RaspberryPi", "mem_capacity": 4096},
+            {"name": "GPU", "mem_capacity": 8192},
+        ]
 
-# -------- INIT POLICY ----------
-sample_blocks = models[model_names[0]]
-tmp_env = DevicePlacementEnv(sample_blocks, device_list, REINFORCE_ENV, model_names[0])
+    all_models = load_models("data/normalized_model_csvs")
+    models = {m: all_models[m] for m in test_models}
 
-policy = PolicyNet(
-    state_dim=tmp_env.observation_space.shape[0],
-    num_devices=tmp_env.num_devices
-)
+    # ---- Init policy ----
+    sample_blocks = models[test_models[0]]
+    tmp_env = DevicePlacementEnv(sample_blocks, device_list, reinforce_env, test_models[0])
 
-policy.load_state_dict(torch.load(CHECKPOINT_PATH))
-policy.eval()
+    policy = PolicyNet(
+        state_dim=tmp_env.observation_space.shape[0],
+        num_devices=tmp_env.num_devices
+    )
 
-print(f"\nLoaded trained policy from {CHECKPOINT_PATH}")
+    checkpoint = f"checkpoints/policy_net_fold_{fold_id}.pth"
+    policy.load_state_dict(torch.load(checkpoint))
+    policy.eval()
 
-# -------- EVALUATION (ONE ROLLOUT) ----------
-results = []
+    rows = []
 
-for model_name in model_names:
-    blocks = models[model_name]
+    for model_name in test_models:
+        rewards = []
+        splits = []
 
-    env = DevicePlacementEnv(blocks, device_list, REINFORCE_ENV, model_name)
-    state, _ = env.reset()
-    done = False
+        for _ in range(n_rollouts):
+            env = DevicePlacementEnv(
+                models[model_name],
+                device_list,
+                reinforce_env,
+                model_name
+            )
+            state, _ = env.reset()
+            done = False
 
-    while not done:
-        state_tensor = torch.tensor(state, dtype=torch.float32)
-        mask_tensor = torch.tensor(env.get_action_mask(), dtype=torch.float32)
+            while not done:
+                with torch.no_grad():
+                    probs, _ = policy(
+                        torch.tensor(state, dtype=torch.float32),
+                        torch.tensor(env.get_action_mask(), dtype=torch.float32)
+                    )
 
-        with torch.no_grad():
-            probs, _ = policy(state_tensor, mask_tensor)
+                # deterministic evaluation
+                action = torch.argmax(probs).item()
+                state, reward, terminated, truncated, _ = env.step(action)
+                done = terminated or truncated
 
-        action = torch.argmax(probs).item()
-        state, reward, terminated, truncated, _ = env.step(action)
-        done = terminated or truncated
+            split = next(
+                (i for i in range(1, len(env.actions_taken))
+                 if env.actions_taken[i] != env.actions_taken[i - 1]),
+                len(env.actions_taken) - 1
+            )
 
-    # ---- Determine split point (FIRST device change) ----
-    split_point = None
-    for i in range(1, len(env.actions_taken)):
-        if env.actions_taken[i] != env.actions_taken[i - 1]:
-            split_point = i
-            break
-    if split_point is None:
-        split_point = len(env.actions_taken)
+            rewards.append(float(reward))
+            splits.append(split)
 
-    results.append({
-        "model": model_name,
-        "bandwidth_mbps": int(env.bandwidth_mbps),
-        "split_point": split_point,
-        "reward": round(float(reward), 4),
-    })
+        rows.append({
+            "fold": fold_id,
+            "model": model_name,
+            "avg_reward": np.mean(rewards),
+            "std_reward": np.std(rewards),
+            "avg_split": np.mean(splits),
+        })
 
-# -------- SAVE & DISPLAY ----------
-df = pd.DataFrame(results)
+    return pd.DataFrame(rows)
 
-os.makedirs("data/eval", exist_ok=True)
-out_path = "data/eval/eval_single_rollout.csv"
-df.to_csv(out_path, index=False)
 
-print("\n=== Single-Rollout Evaluation Results ===\n")
-print(df.to_string(index=False))
-print(f"\nSaved to → {out_path}")

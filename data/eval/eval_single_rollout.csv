@@ -1,7 +1,7 @@
 model,bandwidth_mbps,split_point,reward
 AlexNet,939,9,0.9496
-InceptionV3,939,8,0.6533
-MobileNetV2,939,7,0.4686
+InceptionV3,939,10,1.0
+MobileNetV2,939,3,1.0
 ResNet18,939,2,1.0
 resnet50,939,6,1.0
-VGG16,939,13,1.0
+VGG16,939,12,0.8548

@@ -1,0 +1,2 @@
+fold,model,avg_reward,std_reward,avg_split
+4,VGG16,0.2349951085091062,0.0,29.0
