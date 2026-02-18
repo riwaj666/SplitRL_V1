@@ -1,4 +1,5 @@
 [
   "AlexNet",
-  "InceptionV3"
+  "efficientnetb1",
+  "resnet34"
 ]

@@ -2,8 +2,22 @@ import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
 from lookUpTable import pi_to_pi_lookup,pi_to_gpu_lookup
+MODEL_LIST = [
+    "alexnet",
+    "inceptionv3",
+    "mobilenetv2",
+    "resnet18",
+    "resnet34",
+    "resnet50",
+    "vgg16",
+    "vgg19",
+    "densenet121",
+    "densenet161",
+    "efficientnetb0",
+    "efficientnetb1",
+    "efficientnetb2",
+]
 
-MODEL_LIST = ['alexnet', 'inceptionv3', 'mobilenetv2', 'resnet18', 'resnet50', 'vgg16']
 MODEL_TO_IDX = {m: i for i, m in enumerate(MODEL_LIST)}
 
 NUM_MODELS = len(MODEL_LIST)

@@ -1,0 +1,18 @@
+{
+    "model_name": "efficientnet_b2",
+    "split_index": 3,
+    "static_network_delay_ms": 0.0,
+    "system_inference_throughput_imgs_per_s": 4.895098953593798,
+    "average_metrics_per_batch": {
+        "part1_inference_time_s": 1.5782314538955688,
+        "part2_inference_time_s": 1.4251421988010406,
+        "network_time_s": 0.02702847123146057,
+        "end_to_end_latency_s": 3.059809684753418,
+        "intermediate_data_size_bytes": 2409001.0,
+        "network_throughput_mbps": 90.55953049018679,
+        "device1_cpu_percent": 81.4,
+        "device1_gpu_util_percent": null,
+        "device2_cpu_percent": 74.38749999999999,
+        "device2_gpu_util_percent": null
+    }
+}

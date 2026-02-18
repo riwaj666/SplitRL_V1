@@ -3,5 +3,11 @@
   "InceptionV3",
   "MobileNetV2",
   "VGG16",
+  "VGG19",
+  "densenet161",
+  "efficientnetb0",
+  "efficientnetb1",
+  "efficientnetb2",
+  "resnet34",
   "resnet50"
 ]

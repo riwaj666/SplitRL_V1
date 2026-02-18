@@ -1,0 +1,15 @@
+[
+  "AlexNet",
+  "InceptionV3",
+  "MobileNetV2",
+  "ResNet18",
+  "VGG16",
+  "VGG19",
+  "densenet121",
+  "densenet161",
+  "efficientnetb0",
+  "efficientnetb1",
+  "efficientnetb2",
+  "resnet34",
+  "resnet50"
+]

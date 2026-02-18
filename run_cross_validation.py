@@ -1,17 +1,18 @@
 import os
 import json
-from sklearn.model_selection import KFold
+import random
 
 from Reinforce import train_policy
 from eval_policy import evaluate_policy
 from main import load_models
 
 MODEL_DIR = "data/normalized_model_csvs"
-N_FOLDS = 5
+TRAIN_RATIO = 0.8
+
 REINFORCE_ENV = input("Enter which table to look: ")
 
 # ---------------------------------------------------
-# ✅ SINGLE SOURCE OF TRUTH
+# LOAD MODELS
 # ---------------------------------------------------
 models = load_models(MODEL_DIR)
 model_names = sorted(models.keys())
@@ -21,46 +22,50 @@ for m in model_names:
     print(" -", m)
 
 # ---------------------------------------------------
-# K-FOLD SPLIT
+# TRAIN / TEST SPLIT (80 / 20)
 # ---------------------------------------------------
-kf = KFold(n_splits=N_FOLDS, shuffle=True, random_state=42)
+# TRAIN / TEST = ALL MODELS
+train_models = model_names
+test_models  = model_names
 
+print("\n📊 Data split:")
+print(f"Train models ({len(train_models)}):", train_models)
+print(f"Test models  ({len(test_models)}):", test_models)
+
+
+
+# ---------------------------------------------------
+# SAVE SPLITS
+# ---------------------------------------------------
 os.makedirs("data/splits", exist_ok=True)
 os.makedirs("results", exist_ok=True)
 
-all_results = []
+with open("data/splits/train_models.json", "w") as f:
+    json.dump(train_models, f, indent=2)
 
-for fold_id, (train_idx, test_idx) in enumerate(kf.split(model_names), start=1):
-    print(f"\n===== FOLD {fold_id}/{N_FOLDS} =====")
+with open("data/splits/test_models.json", "w") as f:
+    json.dump(test_models, f, indent=2)
 
-    train_models = [model_names[i] for i in train_idx]
-    test_models  = [model_names[i] for i in test_idx]
+# ---------------------------------------------------
+# TRAIN
+# ---------------------------------------------------
+print("\n🚀 Training policy on 80% of models...")
+train_policy(
+    train_models=train_models,
+    reinforce_env=REINFORCE_ENV,
+)
 
-    print("Train models:", train_models)
-    print("Test models :", test_models)
+# ---------------------------------------------------
+# EVALUATE
+# ---------------------------------------------------
+print("\n🧪 Evaluating policy on 20% held-out models...")
+df = evaluate_policy(
+    test_models=test_models,
+    reinforce_env=REINFORCE_ENV,
+    fold_id=1
+)
 
-    # ---- SAVE SPLITS ----
-    with open(f"data/splits/train_fold_{fold_id}.json", "w") as f:
-        json.dump(train_models, f, indent=2)
+df.to_csv("results/eval_80_20.csv", index=False)
 
-    with open(f"data/splits/test_fold_{fold_id}.json", "w") as f:
-        json.dump(test_models, f, indent=2)
-
-    # ---- TRAIN ----
-    train_policy(
-        train_models=train_models,
-        reinforce_env=REINFORCE_ENV,
-        fold_id=fold_id
-    )
-
-    # ---- EVALUATE ----
-    df = evaluate_policy(
-        test_models=test_models,
-        reinforce_env=REINFORCE_ENV,
-        fold_id=fold_id
-    )
-
-    df.to_csv(f"results/eval_fold_{fold_id}.csv", index=False)
-    all_results.append(df)
-
-print("\n✅ Cross-validation complete")
+print("\n✅ Train / test run complete")
+print("📄 Results saved to results/eval_80_20.csv")

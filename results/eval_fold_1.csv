@@ -1,3 +1,0 @@
-fold,model,avg_reward,std_reward,avg_split
-1,AlexNet,0.028128065454595196,3.469446951953614e-18,2.0
-1,InceptionV3,0.2902176748165008,0.0,5.0
