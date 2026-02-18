@@ -45,7 +45,7 @@ def train_policy(
     num_episodes=15000,
     lr=1e-3,
     batch_size=5,
-    entropy_coeff=0.2,
+    entropy_coeff=0.0,
     epsilon_greedy=0.1,
 ):
 
@@ -227,7 +227,7 @@ def train_policy(
             torch.nn.utils.clip_grad_norm_(policy.parameters(), 1.0)
             optimizer.step()
 
-            entropy_coeff = max(0.02, entropy_coeff * 0.99)
+            entropy_coeff = max(0.00, entropy_coeff * 0.995)
             batch_memory.clear()
 
         if episode % 500 == 0:

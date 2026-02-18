@@ -1,0 +1,3 @@
+fold,model,final_reward,split_point,split_ratio
+1,densenet121,0.4858756243316292,5,0.4166666666666667
+1,resnet18,0.9772814215247084,3,0.375
