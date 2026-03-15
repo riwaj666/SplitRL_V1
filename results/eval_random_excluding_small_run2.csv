@@ -1,0 +1,3 @@
+fold,model,final_reward,split_point,split_ratio
+2,vgg16,0.8568556422949929,11,0.36666666666666664
+2,efficientnetb2,1.0,3,0.375

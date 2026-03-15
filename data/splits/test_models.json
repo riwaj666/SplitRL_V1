@@ -1,4 +1,5 @@
 [
-  "densenet121",
+  "vgg19",
+  "mobilenetv2",
   "resnet18"
 ]

@@ -14,7 +14,7 @@ from main import load_models
 # ---------------------------------------------------
 # 📈 Plot utility
 # ---------------------------------------------------
-def save_reward_plot(rewards, save_dir="results"):
+def save_reward_plot(rewards, run_id, save_dir="results"):
     os.makedirs(save_dir, exist_ok=True)
 
     if not rewards:
@@ -25,15 +25,23 @@ def save_reward_plot(rewards, save_dir="results"):
 
     if len(rewards) > 100:
         smooth = np.convolve(rewards, np.ones(100) / 100, mode="valid")
-        plt.plot(range(99, 99 + len(smooth)), smooth, linewidth=2, label="Moving Avg (100)")
+        plt.plot(
+            range(99, 99 + len(smooth)),
+            smooth,
+            linewidth=2,
+            label="Moving Avg (100)"
+        )
 
     plt.xlabel("Episode")
     plt.ylabel("Final Reward")
-    plt.title("Training Reward")
+    plt.title(f"Training Reward (Run {run_id})")
     plt.legend()
     plt.grid(True)
-    plt.savefig(os.path.join(save_dir, "reward_train.png"), dpi=300)
+
+    plot_path = os.path.join(save_dir, f"reward_train_run{run_id}.png")
+    plt.savefig(plot_path, dpi=300)
     plt.close()
+
 
 
 # ---------------------------------------------------
@@ -42,6 +50,7 @@ def save_reward_plot(rewards, save_dir="results"):
 def train_policy(
     train_models,
     reinforce_env,
+    run_id,
     num_episodes=15000,
     lr=1e-3,
     batch_size=5,
@@ -97,7 +106,7 @@ def train_policy(
 
     # ------------------ LOGGING ------------------
     os.makedirs("results", exist_ok=True)
-    log_path = "results/training_log.csv"
+    log_path = f"results/training_log_run{run_id}.csv"
 
     with open(log_path, "w", newline="") as f:
         writer = csv.writer(f)
@@ -238,7 +247,12 @@ def train_policy(
     # 💾 SAVE
     # ---------------------------------------------------
     os.makedirs("checkpoints", exist_ok=True)
-    torch.save(policy.state_dict(), "checkpoints/policy_net.pth")
+    os.makedirs("checkpoints", exist_ok=True)
+    torch.save(
+        policy.state_dict(),
+        f"checkpoints/policy_net_run{run_id}.pth"
+    )
 
-    save_reward_plot(episode_rewards)
+    save_reward_plot(episode_rewards, run_id)
+
     print("✅ Training complete. Logs saved to results/training_log.csv")
