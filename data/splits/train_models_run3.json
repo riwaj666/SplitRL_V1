@@ -1,10 +1,10 @@
 [
-  "resnet34",
+  "densenet161",
   "efficientnetb1",
   "resnet18",
-  "densenet161",
-  "efficientnetb0",
   "vgg19",
+  "vgg16",
   "densenet121",
+  "efficientnetb0",
   "resnet50"
 ]

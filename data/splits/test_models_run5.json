@@ -1,4 +1,4 @@
 [
-  "vgg16",
-  "efficientnetb2"
+  "densenet161",
+  "resnet18"
 ]

@@ -1,0 +1,18 @@
+{
+    "model_name": "vgg19",
+    "split_index": 30,
+    "static_network_delay_ms": 200.0,
+    "system_inference_throughput_imgs_per_s": 0.5584932932424019,
+    "average_metrics_per_batch": {
+        "part1_inference_time_s": 14.25942638516426,
+        "part2_inference_time_s": 0.9198615252971649,
+        "network_time_s": 0.05174693465232849,
+        "end_to_end_latency_s": 15.254394084215164,
+        "intermediate_data_size_bytes": 3211817.0,
+        "network_throughput_mbps": 59.21024066136943,
+        "device1_cpu_percent": 90.75,
+        "device1_gpu_util_percent": null,
+        "device2_cpu_percent": 7.0,
+        "device2_gpu_util_percent": null
+    }
+}

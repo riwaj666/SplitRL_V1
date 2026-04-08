@@ -52,7 +52,8 @@ class DevicePlacementEnv(gym.Env):
         self.remaining_exec_time = self.total_exec_time
 
         self.actions_taken = []
-        self.bandwidth_mbps = 939
+        available_bw = [939,750,550,350]
+        self.bandwidth_mbps = np.random.choice(available_bw)
 
 
 
@@ -213,8 +214,10 @@ class DevicePlacementEnv(gym.Env):
         self.prev_device = None
         self.remaining_exec_time = self.total_exec_time
         self.prev_device_onehot = np.zeros(self.num_devices, dtype=np.float32)
+        self.actions_taken = []  # IMPORTANT FIX
         self.placement_log = []
-        self.bandwidth_mbps = 939
+        available_bw = [939,750,550,350]
+        self.bandwidth_mbps = np.random.choice(available_bw)
 
 
         return self._get_state(), {}

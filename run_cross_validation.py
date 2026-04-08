@@ -1,6 +1,8 @@
 import os
 import json
 import random
+import torch
+import numpy as np
 
 from Reinforce import train_policy
 from eval_policy import evaluate_policy
@@ -37,6 +39,11 @@ os.makedirs("data/splits", exist_ok=True)
 # RUN 5 TIMES
 # ---------------------------------------------------
 for run_id in range(1, NUM_RUNS + 1):
+
+    seed = 42 + run_id
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
 
     print(f"\n================ RUN {run_id} ================")
 

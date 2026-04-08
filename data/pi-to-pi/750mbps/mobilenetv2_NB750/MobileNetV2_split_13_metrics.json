@@ -1,0 +1,14 @@
+{
+    "model_name": "MobileNetV2",
+    "split_index": 13,
+    "static_network_delay_ms": 0,
+    "system_inference_throughput_imgs_per_s": 5.128391521116695,
+    "average_metrics_per_batch": {
+        "part1_inference_time_s": 1.5333889722824097,
+        "part2_inference_time_s": 0.2413468360900879,
+        "network_time_s": 0.007563978433609009,
+        "end_to_end_latency_s": 1.7951435148715973,
+        "intermediate_data_size_bytes": 602613.0,
+        "network_throughput_mbps": 76.02402009349346
+    }
+}

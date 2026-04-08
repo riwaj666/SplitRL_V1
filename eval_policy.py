@@ -1,6 +1,13 @@
+import os
 import torch
 import numpy as np
 import pandas as pd
+import matplotlib
+
+# prevents popup graph windows
+matplotlib.use("Agg")
+
+import matplotlib.pyplot as plt
 
 from Env import DevicePlacementEnv
 from Model import PolicyNet
@@ -21,14 +28,16 @@ def evaluate_policy(test_models, reinforce_env, fold_id=1):
             {"name": "GPU", "mem_capacity": 8192},
         ]
 
-    # -------- LOAD MODELS (NORMALIZED) --------
+    # -------- LOAD MODELS --------
     raw_models = load_models("data/normalized_model_csvs")
     all_models = {k.lower(): v for k, v in raw_models.items()}
+    test_models = [m.lower() for m in test_models]
 
-    models = {m: all_models[m] for m in test_models}
+    models = {m: all_models[m] for m in test_models if m in all_models}
 
-    # -------- INIT POLICY --------
+    # -------- INIT SAMPLE ENV --------
     sample_blocks = models[test_models[0]]
+
     tmp_env = DevicePlacementEnv(
         sample_blocks,
         device_list,
@@ -36,20 +45,28 @@ def evaluate_policy(test_models, reinforce_env, fold_id=1):
         test_models[0]
     )
 
+    # -------- INIT POLICY --------
     policy = PolicyNet(
         state_dim=tmp_env.observation_space.shape[0],
         num_devices=tmp_env.num_devices
     )
 
+    # -------- LOAD TRAINED WEIGHTS --------
+    checkpoint_path = f"checkpoints/policy_net_run{fold_id}.pth"
+
     policy.load_state_dict(
-        torch.load("checkpoints/policy_net.pth", map_location="cpu")
+        torch.load(checkpoint_path, map_location="cpu")
     )
+
     policy.eval()
 
     rows = []
+    reward_history = []
 
-    # -------- EVALUATION --------
-    for model_name in test_models:
+    print("\n🧪 Evaluating policy...\n")
+
+    # -------- EVALUATION LOOP --------
+    for episode, model_name in enumerate(test_models, 1):
 
         env = DevicePlacementEnv(
             models[model_name],
@@ -60,49 +77,79 @@ def evaluate_policy(test_models, reinforce_env, fold_id=1):
 
         state, _ = env.reset()
         done = False
-        shaped_reward = 0.0
+        total_reward = 0.0
 
         while not done:
             with torch.no_grad():
-                probs, _ = policy(
-                    torch.tensor(state, dtype=torch.float32),
-                    torch.tensor(env.get_action_mask(), dtype=torch.float32)
+                state_t = torch.tensor(
+                    state,
+                    dtype=torch.float32
                 )
 
-                # ---- APPLY ACTION MASK ----
-                mask = torch.tensor(env.get_action_mask(), dtype=torch.bool)
-                probs = probs.clone()
-                probs[~mask] = 0.0
+                mask_t = torch.tensor(
+                    env.get_action_mask(),
+                    dtype=torch.float32
+                )
 
-                # ---- SAFE STOCHASTIC SELECTION ----
+                probs, _ = policy(state_t, mask_t)
+
+                # -------- APPLY ACTION MASK --------
+                mask_bool = torch.tensor(
+                    env.get_action_mask(),
+                    dtype=torch.bool
+                )
+
+                probs = probs.clone()
+                probs[~mask_bool] = 0.0
+
                 if probs.sum() == 0:
-                    action = torch.argmax(mask.float()).item()
+                    action = torch.argmax(mask_bool.float()).item()
                 else:
                     probs = probs / probs.sum()
-                    dist = torch.distributions.Categorical(probs)
-                    action = dist.sample().item()
+
+                    # deterministic evaluation
+                    action = torch.argmax(probs).item()
 
             state, reward, terminated, truncated, info = env.step(action)
+
             done = terminated or truncated
+            total_reward += reward
 
-            shaped_reward += reward
-            shaped_reward -= 0.01 * info.get("transfer_time", 0.0)
+        # -------- SPLIT POINT --------
+        split_point = env.num_blocks
 
-        # -------- SPLIT POINT (LAST SWITCH) --------
-        split_point = len(env.actions_taken)
-        for i in reversed(range(1, len(env.actions_taken))):
+        for i in range(1, len(env.actions_taken)):
             if env.actions_taken[i] != env.actions_taken[i - 1]:
                 split_point = i
                 break
 
         split_ratio = split_point / env.num_blocks
 
+        print(
+            f"↳ Model: {model_name:15} | "
+            f"Bandwidth: {env.bandwidth_mbps:4} Mbps | "
+            f"Reward: {total_reward:.4f} | "
+            f"Split Point: {split_point}"
+        )
+
         rows.append({
             "fold": fold_id,
             "model": model_name,
-            "final_reward": float(shaped_reward),
+            "bandwidth": env.bandwidth_mbps,
+            "final_reward": float(total_reward),
             "split_point": split_point,
             "split_ratio": split_ratio
         })
 
-    return pd.DataFrame(rows)
+        reward_history.append(total_reward)
+
+    df = pd.DataFrame(rows)
+
+    print("\n📊 Evaluation Summary:")
+    print(f"Mean Reward     : {df['final_reward'].mean():.4f}")
+    print(f"Std Reward      : {df['final_reward'].std():.4f}")
+    print(f"Min Reward      : {df['final_reward'].min():.4f}")
+    print(f"Max Reward      : {df['final_reward'].max():.4f}")
+
+    return df
+

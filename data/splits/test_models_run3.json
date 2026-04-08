@@ -1,4 +1,4 @@
 [
-  "vgg16",
+  "resnet34",
   "efficientnetb2"
 ]

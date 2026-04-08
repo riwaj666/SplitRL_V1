@@ -1,0 +1,14 @@
+{
+    "model_name": "inception_v3",
+    "split_index": 1,
+    "static_network_delay_ms": 0,
+    "system_inference_throughput_imgs_per_s": 1.425628754401167,
+    "average_metrics_per_batch": {
+        "part1_inference_time_s": 0.20740261444678673,
+        "part2_inference_time_s": 5.331060116107647,
+        "network_time_s": 0.3004750105050894,
+        "end_to_end_latency_s": 10.621581829511202,
+        "intermediate_data_size_bytes": 22734328.0,
+        "network_throughput_mbps": 78.47988439167871
+    }
+}

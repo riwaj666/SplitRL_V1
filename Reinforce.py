@@ -51,17 +51,14 @@ def train_policy(
     train_models,
     reinforce_env,
     run_id,
-    num_episodes=15000,
+    num_episodes=10000,
     lr=1e-3,
-    batch_size=5,
+    batch_size=16,
     entropy_coeff=0.0,
     epsilon_greedy=0.1,
 ):
 
-    # ------------------ SEEDS ------------------
-    torch.manual_seed(42)
-    np.random.seed(42)
-    random.seed(42)
+
 
     # ------------------ HELPERS ------------------
     def normalize(name):
@@ -113,9 +110,9 @@ def train_policy(
         writer.writerow([
             "episode",
             "model",
+            "bandwidth",
             "final_reward",
             "split_point",
-            "split_ratio",
         ])
 
     episode_rewards = []
@@ -166,7 +163,7 @@ def train_policy(
             done = terminated or truncated
 
             shaped_reward += reward
-            shaped_reward -= 0.01 * info.get("transfer_time", 0.0)
+
 
         final_reward = float(shaped_reward)
         episode_rewards.append(final_reward)
@@ -205,6 +202,7 @@ def train_policy(
             writer.writerow([
                 episode,
                 model_name,
+                env.bandwidth_mbps,
                 final_reward,
                 split_point,
             ])
@@ -227,8 +225,8 @@ def train_policy(
                 advantage = np.clip(advantage, -2.0, 2.0)
 
                 batch_loss += (
-                    -ep["log_probs"].mean() * advantage
-                    - entropy_coeff * ep["entropies"].mean()
+                    -ep["log_probs"].sum() * advantage
+                    - entropy_coeff * ep["entropies"].sum()
                 )
 
             optimizer.zero_grad()
@@ -247,7 +245,7 @@ def train_policy(
     # 💾 SAVE
     # ---------------------------------------------------
     os.makedirs("checkpoints", exist_ok=True)
-    os.makedirs("checkpoints", exist_ok=True)
+
     torch.save(
         policy.state_dict(),
         f"checkpoints/policy_net_run{run_id}.pth"

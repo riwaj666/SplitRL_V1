@@ -1,0 +1,18 @@
+{
+    "model_name": "resnet50",
+    "split_index": 9,
+    "static_network_delay_ms": 200.0,
+    "system_inference_throughput_imgs_per_s": 2.054101965936145,
+    "average_metrics_per_batch": {
+        "part1_inference_time_s": 3.7358174920082092,
+        "part2_inference_time_s": 1.7358818650245667,
+        "network_time_s": 0.15976440906524658,
+        "end_to_end_latency_s": 5.627685010433197,
+        "intermediate_data_size_bytes": 6423081.0,
+        "network_throughput_mbps": 38.35114927499991,
+        "device1_cpu_percent": 85.625,
+        "device1_gpu_util_percent": null,
+        "device2_cpu_percent": 39.962500000000006,
+        "device2_gpu_util_percent": null
+    }
+}

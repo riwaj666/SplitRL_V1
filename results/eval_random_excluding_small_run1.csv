@@ -1,3 +1,3 @@
-fold,model,final_reward,split_point,split_ratio
-1,densenet121,1.0,6,0.5
-1,vgg16,0.8568556422949929,11,0.36666666666666664
+fold,model,bandwidth,final_reward,split_point,split_ratio
+1,efficientnetb2,350,1.0,3,0.375
+1,densenet121,550,0.6262433485833546,5,0.4166666666666667

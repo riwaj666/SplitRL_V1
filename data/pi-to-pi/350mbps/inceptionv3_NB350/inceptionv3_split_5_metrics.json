@@ -1,0 +1,18 @@
+{
+    "model_name": "inceptionv3",
+    "split_index": 5,
+    "static_network_delay_ms": 200.0,
+    "system_inference_throughput_imgs_per_s": 1.73668563760215,
+    "average_metrics_per_batch": {
+        "part1_inference_time_s": 1.2392358481884003,
+        "part2_inference_time_s": 4.311041593551636,
+        "network_time_s": 0.3054879307746887,
+        "end_to_end_latency_s": 8.55340701341629,
+        "intermediate_data_size_bytes": 13642793.0,
+        "network_throughput_mbps": 44.34799826554537,
+        "device1_cpu_percent": 34.7375,
+        "device1_gpu_util_percent": null,
+        "device2_cpu_percent": 86.8875,
+        "device2_gpu_util_percent": null
+    }
+}

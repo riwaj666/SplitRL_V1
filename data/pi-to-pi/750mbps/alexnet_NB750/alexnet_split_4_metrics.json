@@ -1,0 +1,14 @@
+{
+    "model_name": "alexnet",
+    "split_index": 4,
+    "static_network_delay_ms": 0,
+    "system_inference_throughput_imgs_per_s": 12.346892658346993,
+    "average_metrics_per_batch": {
+        "part1_inference_time_s": 0.20035099983215332,
+        "part2_inference_time_s": 0.6144348841447097,
+        "network_time_s": 0.03167603566096379,
+        "end_to_end_latency_s": 1.6193647934840276,
+        "intermediate_data_size_bytes": 4479480.0,
+        "network_throughput_mbps": 151.8309196954168
+    }
+}

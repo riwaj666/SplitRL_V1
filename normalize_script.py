@@ -1,6 +1,7 @@
 import os
 import json
 import pandas as pd
+from openpyxl.styles import PatternFill, Font
 
 # -----------------------------------
 # CONFIGURATION
@@ -76,6 +77,14 @@ print(f"✔ Saved normalization stats → {STATS_FILE}")
 # -----------------------------------
 # 4. Normalize each CSV and save
 # -----------------------------------
+column_colors = {
+    "FLOPs (G)": "D9EAF7",            # light blue
+    "Param Memory (MB)": "FCE4D6",    # light orange
+    "Activation Size (MB)": "E2F0D9", # light green
+    "pi_execution_time": "FFF2CC",    # light yellow
+    "gpu_execution_time": "E4DFEC"    # light purple
+}
+
 for df, fname in zip(dfs, file_names):
     norm_df = df.copy()
 
@@ -85,9 +94,33 @@ for df, fname in zip(dfs, file_names):
             (global_max[col] - global_min[col] + EPS)
         )
 
-    out_path = os.path.join(OUTPUT_DIR, fname)
-    norm_df.to_csv(out_path, index=False)
+    # Save CSV
+    csv_path = os.path.join(OUTPUT_DIR, fname)
+    norm_df.to_csv(csv_path, index=False)
 
-    print(f"✔ Saved normalized file → {out_path}")
+    # Save colored Excel
+    excel_path = csv_path.replace(".csv", ".xlsx")
+
+    with pd.ExcelWriter(excel_path, engine="openpyxl") as writer:
+        norm_df.to_excel(writer, index=False, sheet_name="Normalized")
+        worksheet = writer.sheets["Normalized"]
+
+        # Apply column colors
+        for col_idx, col_name in enumerate(norm_df.columns, 1):
+            if col_name in column_colors:
+                fill = PatternFill(
+                    fill_type="solid",
+                    fgColor=column_colors[col_name]
+                )
+
+                for row in range(1, len(norm_df) + 2):
+                    worksheet.cell(row=row, column=col_idx).fill = fill
+
+        # Make headers bold
+        for cell in worksheet[1]:
+            cell.font = Font(bold=True)
+
+    print(f"✔ Saved normalized CSV → {csv_path}")
+    print(f"✔ Saved colored Excel → {excel_path}")
 
 print("\n✅ All model CSVs normalized successfully.")

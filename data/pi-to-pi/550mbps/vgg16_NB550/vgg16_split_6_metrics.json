@@ -1,0 +1,18 @@
+{
+    "model_name": "vgg16",
+    "split_index": 6,
+    "static_network_delay_ms": 200.0,
+    "system_inference_throughput_imgs_per_s": 0.7868536226922209,
+    "average_metrics_per_batch": {
+        "part1_inference_time_s": 3.735781282186508,
+        "part2_inference_time_s": 8.802650511264801,
+        "network_time_s": 1.2747450768947601,
+        "end_to_end_latency_s": 18.91011393070221,
+        "intermediate_data_size_bytes": 51380777.0,
+        "network_throughput_mbps": 40.637359186442936,
+        "device1_cpu_percent": 39.925,
+        "device1_gpu_util_percent": null,
+        "device2_cpu_percent": 78.65,
+        "device2_gpu_util_percent": null
+    }
+}

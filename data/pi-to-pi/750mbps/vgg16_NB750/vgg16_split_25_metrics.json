@@ -1,0 +1,14 @@
+{
+    "model_name": "vgg16",
+    "split_index": 25,
+    "static_network_delay_ms": 0,
+    "system_inference_throughput_imgs_per_s": 0.6708588831316069,
+    "average_metrics_per_batch": {
+        "part1_inference_time_s": 11.84564733505249,
+        "part2_inference_time_s": 1.4122098959409273,
+        "network_time_s": 0.03975541775043194,
+        "end_to_end_latency_s": 13.333798867005568,
+        "intermediate_data_size_bytes": 3211768.0,
+        "network_throughput_mbps": 77.18645084982384
+    }
+}

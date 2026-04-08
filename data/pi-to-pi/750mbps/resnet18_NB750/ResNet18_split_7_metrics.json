@@ -1,0 +1,14 @@
+{
+    "model_name": "ResNet18",
+    "split_index": 7,
+    "static_network_delay_ms": 0,
+    "system_inference_throughput_imgs_per_s": 5.409605085292199,
+    "average_metrics_per_batch": {
+        "part1_inference_time_s": 1.4344709836519682,
+        "part2_inference_time_s": 0.15218212054325983,
+        "network_time_s": 0.010010187442486104,
+        "end_to_end_latency_s": 1.5986956633054292,
+        "intermediate_data_size_bytes": 803318.0,
+        "network_throughput_mbps": 76.60796111011508
+    }
+}
